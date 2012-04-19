@@ -1,8 +1,6 @@
 // To assist with filling paragraphs of text.
 package varg
 
-import "fmt"
-
 type candidate struct {
 	badness   int
 	paragraph []line
@@ -29,44 +27,7 @@ func (c *candidate) copy() *candidate {
 	return &cpy
 }
 
-func (c *candidate) fidelity(targetWidth int) {
-	badness := 0
-	delta := 0
-
-	for i := 0; i < len(c.paragraph); i += 1 {
-		l := c.paragraph[i]
-
-		if l.width > targetWidth {
-			if c.badness < 2147483647 {
-				panic(
-					fmt.Sprintf(
-						"Bad badness score: %d, c %v",
-						c.badness, c))
-			}
-
-			badness = 2147483647
-			break
-		}
-
-		delta = targetWidth - l.width
-		badness += delta * delta
-	}
-
-	// Remove the last line if this is a candidate that did not
-	// exceed the maximum line length.
-	if badness != 2147483647 {
-		badness -= delta * delta
-	}
-
-	if badness != c.badness {
-		panic(fmt.Sprintf("Badness score does not total up correctly, "+
-			"got %d expected %d\n%v", c.badness, badness, c))
-	}
-}
-
 func (c *candidate) addWord(targetWidth int, w string) {
-	c.fidelity(targetWidth)
-
 	l := &c.paragraph[len(c.paragraph)-1]
 
 	l.width += len(w)
@@ -86,21 +47,15 @@ func (c *candidate) addWord(targetWidth int, w string) {
 	if l.width > targetWidth {
 		c.badness = 2147483647
 	}
-
-	c.fidelity(targetWidth)
 }
 
 func (c *candidate) breakAndAdd(targetWidth int, w string) {
-	c.fidelity(targetWidth)
-
 	delta := targetWidth - c.paragraph[len(c.paragraph)-1].width
 
 	c.badness += delta * delta
 	c.paragraph = append(c.paragraph, *newLine())
 
 	c.addWord(targetWidth, w)
-
-	c.fidelity(targetWidth)
 }
 
 func newLine() *line {
